@@ -480,11 +480,11 @@ def render_profiles(num, seq, reactivity, stderr,
     for loc, spine in ax1.spines.items():
         if loc == 'bottom':
             spine.set_position(('outward', 6))  # move outward (down) 6 pts
-            spine.set_smart_bounds(True)
+            #spine.set_smart_bounds(True)
     for loc, spine in ax1.spines.items():
         if loc == 'left':
             spine.set_position(('outward', 6))  # move outward (left) 6 pts
-            spine.set_smart_bounds(True)
+            #spine.set_smart_bounds(True)
 
     # need to add labels after moving spines, otherwise they will disappear
     ax1xlabel = ax1.set_xlabel("Nucleotide", horizontalalignment="left", fontsize=14, labelpad=0)
