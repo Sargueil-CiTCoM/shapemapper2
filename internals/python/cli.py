@@ -15,7 +15,7 @@ import pyshapemap.pipeline_arg_parser as ap
 from pyshapemap.pipeline_builder import build_pipeline
 from pyshapemap.util import Logger, timestamp, version
 from pyshapemap.flowchart import draw_flowchart
-
+sys.setrecursionlimit(3000)
 def run(args):
     assert isinstance(args, list)
     try:

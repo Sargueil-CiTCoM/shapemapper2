@@ -885,8 +885,11 @@ def write_histograms(shape, stderr,
         vals = np.log(rx_rate/bg_rate)
         vals = vals[np.isfinite(vals)]
         # typical experiments range between -1 and 7
-        pdf, bins, patches = ax4.hist(vals, bins=num_bins, range=(-1,7), histtype='step', lw=1.5,
+        try:
+            pdf, bins, patches = ax4.hist(vals, bins=num_bins, range=(-1,7), histtype='step', lw=1.5,
                                       color='black')
+        except UnboundLocalError:
+            pass
         max_y = max([x[1] for x in patches[0].get_xy()])
         # rescale stepplot to max out at 1
         patches[0].set_xy([[c[0],c[1]/max_y] for c in patches[0].get_xy()])
@@ -1213,20 +1216,23 @@ if __name__=="__main__":
                        p.high_mut_thresh,
                        p.min_high_mut)
 
-    if p.plot is not None and (d["Modified_rate"] is None or 
-                               len(d["Modified_rate"]) <= p.maxlen):
-        render_profiles(
-            d["Nucleotide"], d["Sequence"], profile, stderr,
-            d["Modified_rate"], d["Untreated_rate"], d["Denatured_rate"],
-            d["Modified_effective_depth"], d["Untreated_effective_depth"], d["Denatured_effective_depth"],
-            d["Modified_read_depth"], d["Untreated_read_depth"], d["Denatured_read_depth"],
-            p.plot, title, qc_pass)
+    try:
+        if p.plot is not None and (d["Modified_rate"] is None or 
+                                   len(d["Modified_rate"]) <= p.maxlen):
+            render_profiles(
+                d["Nucleotide"], d["Sequence"], profile, stderr,
+                d["Modified_rate"], d["Untreated_rate"], d["Denatured_rate"],
+                d["Modified_effective_depth"], d["Untreated_effective_depth"], d["Denatured_effective_depth"],
+                d["Modified_read_depth"], d["Untreated_read_depth"], d["Denatured_read_depth"],
+                p.plot, title, qc_pass)
 
-    if p.hist is not None:
-        write_histograms(
-            profile, stderr,
-            p.mindepth, p.maxbg,
-            d["Sequence"],
-            d["Modified_rate"], d["Untreated_rate"], d["Denatured_rate"],
-            d["Modified_effective_depth"], d["Untreated_effective_depth"], d["Denatured_effective_depth"],
-            p.hist, title, qc_pass)
+        if p.hist is not None:
+            write_histograms(
+                profile, stderr,
+                p.mindepth, p.maxbg,
+                d["Sequence"],
+                d["Modified_rate"], d["Untreated_rate"], d["Denatured_rate"],
+                d["Modified_effective_depth"], d["Untreated_effective_depth"], d["Denatured_effective_depth"],
+                p.hist, title, qc_pass)
+    except:
+        pass

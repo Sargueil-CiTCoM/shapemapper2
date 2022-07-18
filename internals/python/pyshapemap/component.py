@@ -486,7 +486,7 @@ class Component():
         try:
             f = open(self.stderr.output_nodes[0].filename, 'rU')
             return f.read()
-        except AttributeError:
+        except (AttributeError, FileNotFoundError):
             return ""
 
     def cmd(self):
