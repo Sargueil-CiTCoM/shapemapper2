@@ -142,9 +142,21 @@ def qc_stats(seq,
     
     print("Quality control checks:\n")
 
-    if rx_rate is None and bg_rate is None and dc_rate is None:
-        # no coverage at all
-        print("FAIL: no reads mapped to this RNA") 
+    # no coverage at all
+    no_cover_rate = False
+    if rx_rate is None:
+        print("FAIL: no modified reads mapped to this RNA") 
+        no_cover_rate = True
+
+    if bg_rate is None:
+        print("FAIL: no unmodified reads mapped to this RNA") 
+        no_cover_rate = True
+
+    if dc_rate is None:
+        print("FAIL: no denatured reads mapped to this RNA") 
+        no_cover_rate = True
+
+    if no_cover_rate:
         return False
 
     depth_mask_pass = np.full((len(rx_depth),), True, dtype=bool)
