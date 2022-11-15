@@ -1106,6 +1106,7 @@ class ProfileHandler(Component):
                  **kwargs):
         require_explicit_kwargs(locals())
         super().__init__(**kwargs)
+        target_name = target_name.strip().replace(" ", "_").replace("\t", "_")
         profilemaker = CalcProfile(target=target,
                                    target_name=target_name,
                                    maxbg=maxbg,

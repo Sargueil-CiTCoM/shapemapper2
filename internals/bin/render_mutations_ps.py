@@ -162,7 +162,7 @@ def load_primers(filename):
     if filename is None or filename == "":
         return []
 
-    f = open(filename, "rU")
+    f = open(filename, "r")
     primers = []
     for line in f:
         if line[0] == '>' or len(line) < 1:
