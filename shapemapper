@@ -30,7 +30,7 @@ if [ ! -z "${SHAPEMAPPER_ROOT_DIR}" ]; then
     THIS_DIR="${SHAPEMAPPER_ROOT_DIR}"
 fi
 
-source ${THIS_DIR}/internals/paths/bin_paths.sh
+source ${THIS_DIR}/shapemapper2/paths/bin_paths.sh
 
 # warn user if executables are not present
 if [ -z $(which shapemapper_read_trimmer) ] || \
@@ -43,6 +43,6 @@ if [ -z $(which shapemapper_read_trimmer) ] || \
     exit 1
 fi
 
-exec python3 ${THIS_DIR}/internals/python/cli.py "$@"
+exec python3 ${THIS_DIR}/shapemapper2/python/cli.py "$@"
 
 
