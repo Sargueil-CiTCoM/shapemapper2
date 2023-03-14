@@ -30,16 +30,12 @@ DISABLE_MERGING = False
 
 # TODO: expose more module-specific params: could just forward custom args, kwargs to each process
 
+
 class FastaFormatChecker(Component):
-    def __init__(self,
-                 fasta=None,
-                 **kwargs):
+    def __init__(self, fasta=None, **kwargs):
         super().__init__(**kwargs)
-        self.add(InputNode(name="fasta",
-                           parallel=False))
-        self.add(OutputNode(name="corrected",
-                            extension="passthrough",
-                            parallel=False))
+        self.add(InputNode(name="fasta", parallel=False))
+        self.add(OutputNode(name="corrected", extension="passthrough", parallel=False))
         if fasta is not None:
             if isinstance(fasta, str):
                 self.fasta.set_file(fasta)
@@ -49,20 +45,19 @@ class FastaFormatChecker(Component):
         self.add(StderrNode())
 
     def cmd(self):
-        cmd = [pyexe,
-               os.path.join(bin_dir, "check_fasta_format.py"),
-               "{fasta}",
-               "{corrected}"]
+        cmd = [
+            pyexe,
+            os.path.join(bin_dir, "check_fasta_format.py"),
+            "{fasta}",
+            "{corrected}",
+        ]
         return cmd
 
 
 class QualityTrimmer(Component):
-    def __init__(self,
-                 fastq=None,
-                 min_qual=None,
-                 window=None,
-                 min_length=None,
-                 **kwargs):
+    def __init__(
+        self, fastq=None, min_qual=None, window=None, min_length=None, **kwargs
+    ):
         super().__init__(**kwargs)
         self.min_qual = min_qual
         self.min_length = min_length
@@ -70,8 +65,7 @@ class QualityTrimmer(Component):
         self.add(InputNode(name="fastq"))
         if fastq is not None:
             self.fastq.set_file(fastq)
-        self.add(OutputNode(name="trimmed",
-                            extension="fastq"))
+        self.add(OutputNode(name="trimmed", extension="fastq"))
         self.add(StdoutNode())
         self.add(StderrNode())
 
@@ -85,27 +79,29 @@ class QualityTrimmer(Component):
             cmd += " -w {window}"
         return cmd
 
+
 # NOTE: this is only used so bbmerge doesn't crash with pipe inputs
 class Interleaver(Component):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.add(InputNode(name="R1"))
         self.add(InputNode(name="R2"))
-        self.add(OutputNode(name="interleaved",
-                            extension="fastq"))
+        self.add(OutputNode(name="interleaved", extension="fastq"))
         self.add(StderrNode())
 
     def cmd(self):
-        cmd = [pyexe,
-               os.path.join(bin_dir, "interleave_fastq.py"),
-               "{R1}", "{R2}", "{interleaved}"]
+        cmd = [
+            pyexe,
+            os.path.join(bin_dir, "interleave_fastq.py"),
+            "{R1}",
+            "{R2}",
+            "{interleaved}",
+        ]
         return cmd
 
 
 class Tab6Interleaver(Component):
-    def __init__(self,
-                 separate_files=False,
-                 **kwargs):
+    def __init__(self, separate_files=False, **kwargs):
         self.separate_files = separate_files
         super().__init__(**kwargs)
 
@@ -113,17 +109,14 @@ class Tab6Interleaver(Component):
             self.add(InputNode(name="R1", extension="fastq"))
             self.add(InputNode(name="R2", extension="fastq"))
         else:
-            self.add(InputNode(name="fastq")) # mixed paired/unpaired
-        self.add(OutputNode(name="tab6",
-                            extension="tab6"))
+            self.add(InputNode(name="fastq"))  # mixed paired/unpaired
+        self.add(OutputNode(name="tab6", extension="tab6"))
         self.add(StderrNode())
 
     def cmd(self):
-        cmd = [pyexe,
-               os.path.join(bin_dir, "tab6_interleave.py")]
+        cmd = [pyexe, os.path.join(bin_dir, "tab6_interleave.py")]
         if self.separate_files:
-            cmd += ["--R1", "{R1}",
-                    "--R2", "{R2}"]
+            cmd += ["--R1", "{R1}", "--R2", "{R2}"]
         else:
             cmd += ["--input", "{fastq}"]
 
@@ -143,15 +136,21 @@ class Deinterleaver(Component):
         self.add(StderrNode())
 
     def cmd(self):
-        #cmd = "paste - - - - - - - - < {interleaved} "
-        #cmd += "| tee >(cut -f 1-4 | tr '\\t' '\\n' > {R1}) "
-        #cmd += "| cut -f 5-8 | tr '\\t' '\\n' > {R2}"
-        cmd = [pyexe,
-               os.path.join(bin_dir, "deinterleave_fastq.py"),
-               "--input", "{interleaved}",
-               "--R1-out", "{R1}",
-               "--R2-out", "{R2}",
-               "--unpaired-out", "{unpaired}"]
+        # cmd = "paste - - - - - - - - < {interleaved} "
+        # cmd += "| tee >(cut -f 1-4 | tr '\\t' '\\n' > {R1}) "
+        # cmd += "| cut -f 5-8 | tr '\\t' '\\n' > {R2}"
+        cmd = [
+            pyexe,
+            os.path.join(bin_dir, "deinterleave_fastq.py"),
+            "--input",
+            "{interleaved}",
+            "--R1-out",
+            "{R1}",
+            "--R2-out",
+            "{R2}",
+            "--unpaired-out",
+            "{unpaired}",
+        ]
         return cmd
 
 
@@ -162,20 +161,14 @@ class Appender(Component):
 
     """
 
-    def __init__(self,
-                 inputs=None,
-                 add_extra_newline=False,
-                 **kwargs):
+    def __init__(self, inputs=None, add_extra_newline=False, **kwargs):
         super().__init__(**kwargs)
-        self.add(OutputNode(name="appended",
-                            extension="passthrough"))
+        self.add(OutputNode(name="appended", extension="passthrough"))
         self.add(StderrNode())
         self.add_extra_newline = add_extra_newline
         if add_extra_newline:
             # TODO: maybe hide temp output nodes or color differently in flowchart
-            self.add(OutputNode(name="linebreak",
-                                extension="txt",
-                                parallel=False))
+            self.add(OutputNode(name="linebreak", extension="txt", parallel=False))
 
         # Option to set input files using args to constructor
         if inputs is not None:
@@ -183,8 +176,7 @@ class Appender(Component):
                 f = inputs[i]
                 name = "f{}".format(i + 1)
                 if isinstance(f, str):
-                    self.add(InputNode(name=name,
-                                       filename=f))
+                    self.add(InputNode(name=name, filename=f))
                 elif isinstance(f, Node):
                     node = InputNode(name=name)
                     self.add(node)
@@ -194,7 +186,7 @@ class Appender(Component):
         if self.add_extra_newline:
             # for concatenating some files (like FASTA), add an extra linebreak
             # between files to ensure headers appear on their own lines
-            cmd = "echo -e '\n' > {linebreak}; cat".split(' ')
+            cmd = "echo -e '\n' > {linebreak}; cat".split(" ")
             for i in range(len(self.input_nodes)):
                 cmd += ["{{{}}}".format(self.input_nodes[i].get_name())]
                 if i < len(self.input_nodes) - 1:
@@ -211,37 +203,33 @@ class Merger(Component):
     # TODO: expose more parameters
     # Note: "merged" output stream now includes both merged and
     #       unmerged reads
-    def __init__(self,
-                 preserve_order=None,
-                 nproc=4,
-                 **kwargs):
+    def __init__(self, preserve_order=None, nproc=4, **kwargs):
         self.nproc = nproc
         self.preserve_order = preserve_order
         super().__init__(**kwargs)
         self.add(InputNode(name="interleaved_fastq"))
-        self.add(StdoutNode(name="output",
-                            extension="fastq",
-                            parallel=True))
+        self.add(StdoutNode(name="output", extension="fastq", parallel=True))
         self.add(StdoutNode())
         self.add(StderrNode())
 
     def cmd(self):
-        cmd = ["bbmerge.sh",
-               "vstrict=t",
-               "in=stdin",
-               "out=stdout",
-               "outu=stdout",
-               #"out={merged}",
-               #"outu={unmerged}",
-               "interleaved=t",
-               "usejni=t", # FIXME: autodetect whether JNI components are compiled
-               "t={}".format(self.nproc), # number of threads
-               #"-eoom",
-               ]
+        cmd = [
+            "bbmerge.sh",
+            "vstrict=t",
+            "in=stdin",
+            "out=stdout",
+            "outu=stdout",
+            # "out={merged}",
+            # "outu={unmerged}",
+            "interleaved=t",
+            "usejni=t",  # FIXME: autodetect whether JNI components are compiled
+            "t={}".format(self.nproc),  # number of threads
+            # "-eoom",
+        ]
         if self.preserve_order:
             cmd += ["ordered=t"]
         if DISABLE_MERGING:
-            cmd += ["minoverlap=2000"] # quick hack to disable merging
+            cmd += ["minoverlap=2000"]  # quick hack to disable merging
         cmd += [">", "{output}"]
         cmd += ["<", "{interleaved_fastq}"]
         return cmd
@@ -254,7 +242,9 @@ class Merger(Component):
             return status
         r = self.read_stderr()
         try:
-            r = "\n".join(r.splitlines()[5:])  # first few lines are typically parameters and filename details
+            r = "\n".join(
+                r.splitlines()[5:]
+            )  # first few lines are typically parameters and filename details
         except IndexError:
             r = ""
         # Ignore broken pipe errors, since those can be caused by a propagating downstream failure
@@ -270,36 +260,35 @@ class Merger(Component):
 
 
 class SamMixer(Component):
-    '''
+    """
     Mix two SAM alignment streams, skipping header lines.
-    '''
+    """
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.add(InputNode(name="sam1", extension='sam'))
-        self.add(InputNode(name="sam2", extension='sam'))
-        self.add(OutputNode(name="mixed", extension='sam'))
+        self.add(InputNode(name="sam1", extension="sam"))
+        self.add(InputNode(name="sam2", extension="sam"))
+        self.add(OutputNode(name="mixed", extension="sam"))
         self.add(StderrNode())
 
     def cmd(self):
-        cmd = [pyexe,
-               os.path.join(bin_dir, "mix_sam.py"),
-               "{sam1}", "{sam2}", "{mixed}"]
+        cmd = [
+            pyexe,
+            os.path.join(bin_dir, "mix_sam.py"),
+            "{sam1}",
+            "{sam2}",
+            "{mixed}",
+        ]
         return cmd
 
 
 class BowtieIndexBuilder(Component):
     out_extension = ""
 
-    def __init__(self,
-                 target=None,
-                 **kwargs):
+    def __init__(self, target=None, **kwargs):
         super().__init__(**kwargs)
-        self.add(InputNode(name="target",
-                           filename=target,
-                           parallel=False))
-        self.add(OutputNode(name="index",
-                            parallel=False,
-                            extension=''))
+        self.add(InputNode(name="target", filename=target, parallel=False))
+        self.add(OutputNode(name="index", parallel=False, extension=""))
         self.add(StdoutNode())
         self.add(StderrNode())
 
@@ -309,14 +298,16 @@ class BowtieIndexBuilder(Component):
 
 
 class BowtieAligner(Component):
-    def __init__(self,
-                 reorder=False,
-                 disable_soft_clipping=False,
-                 nproc=None,
-                 maxins=None,
-                 max_search_depth=None,
-                 max_reseed=None,
-                 **kwargs):
+    def __init__(
+        self,
+        reorder=False,
+        disable_soft_clipping=False,
+        nproc=None,
+        maxins=None,
+        max_search_depth=None,
+        max_reseed=None,
+        **kwargs
+    ):
         self.reorder = reorder
         self.nproc = nproc
         self.disable_soft_clipping = disable_soft_clipping
@@ -331,24 +322,19 @@ class BowtieAligner(Component):
         if self.max_reseed < 0:
             self.max_reseed = None
         if max_reseed is None and max_search_depth is not None:
-            max_reseed = 2 # bowtie2 -R
+            max_reseed = 2  # bowtie2 -R
         if max_search_depth is None and max_reseed is not None:
-            max_search_depth = 15 # bowtie2 -D
+            max_search_depth = 15  # bowtie2 -D
         super().__init__(**kwargs)
-        self.add(InputNode(name="index",
-                           parallel=False))
-        self.add(StdinNode(name="tab6",
-                           extension="tab6",
-                           parallel=True))
-        self.add(OutputNode(name="aligned",
-                            extension="sam",
-                            parallel=True))
+        self.add(InputNode(name="index", parallel=False))
+        self.add(StdinNode(name="tab6", extension="tab6", parallel=True))
+        self.add(OutputNode(name="aligned", extension="sam", parallel=True))
         self.add(StdoutNode())
         self.add(StderrNode())
 
     def cmd(self):
         cmd = ["bowtie2_wrapper.sh"]
-        #cmd = ["bowtie2"]
+        # cmd = ["bowtie2"]
         cmd += ["-p", str(self.nproc)]
 
         if not self.disable_soft_clipping:
@@ -357,79 +343,104 @@ class BowtieAligner(Component):
                 cmd += ["--sensitive-local"]
                 # corresponds to -D 15 -R 2 -N 0 -L 20 -i S,1,0.75
             else:
-                cmd += ["-D", str(self.max_search_depth), "-R", str(self.max_reseed), "-N", "0", "-L", "20", "-i", "S,1,0.75"]
+                cmd += [
+                    "-D",
+                    str(self.max_search_depth),
+                    "-R",
+                    str(self.max_reseed),
+                    "-N",
+                    "0",
+                    "-L",
+                    "20",
+                    "-i",
+                    "S,1,0.75",
+                ]
         else:
             cmd += ["--end-to-end"]
             if self.max_search_depth is None:
                 cmd += ["--sensitive"]
                 # corresponds to -D 15 -R 2 -N 0 -L 22 -i S,1,1.15
             else:
-                cmd += ["-D", str(self.max_search_depth), "-R", str(self.max_reseed), "-N", "0", "-L", "22", "-i", "S,1,0.75"]
+                cmd += [
+                    "-D",
+                    str(self.max_search_depth),
+                    "-R",
+                    str(self.max_reseed),
+                    "-N",
+                    "0",
+                    "-L",
+                    "22",
+                    "-i",
+                    "S,1,0.75",
+                ]
         cmd += [
-               "--mp", "3,1", # try to be slightly more consistent with STAR's alignment parameters
-               "--rdg", "5,1", # multinuc deletions are a large part of the signal, so don't penalize
-                               # as much as bowtie's default setting (open penalty 5, extension penalty 3)
-               "--rfg", "5,1",
-               "--dpad", "30", # this seems reasonable to allow fairly large deletions, but not too crazy (although these do exist)
-               "--maxins", str(self.maxins),
-               "--ignore-quals",
-               "--no-unal",  # don't produce SAM records for reads that didn't map
-
-               #"--quiet", # suppress warnings about e.g. R1 or R2 in a pair being zero-length
-                           # - unfortunately this seems to also eliminate all alignment stats output
-                           # - bin/bowtie2_wrapper.sh hacks around this to filter out spurious warnings
-                           # - could pass reads missing mate pair to bowtie as unpaired input, but then
-                           #   downstream stages can't distinguish merged reads from reads missing a mate pair
-               #"--dovetail", # allow dovetailed paired reads to be considered concordantly aligned
-               ]
+            "--mp",
+            "3,1",  # try to be slightly more consistent with STAR's alignment parameters
+            "--rdg",
+            "5,1",  # multinuc deletions are a large part of the signal, so don't penalize
+            # as much as bowtie's default setting (open penalty 5, extension penalty 3)
+            "--rfg",
+            "5,1",
+            "--dpad",
+            "30",  # this seems reasonable to allow fairly large deletions, but not too crazy (although these do exist)
+            "--maxins",
+            str(self.maxins),
+            "--ignore-quals",
+            "--no-unal",  # don't produce SAM records for reads that didn't map
+            # "--quiet", # suppress warnings about e.g. R1 or R2 in a pair being zero-length
+            # - unfortunately this seems to also eliminate all alignment stats output
+            # - bin/bowtie2_wrapper.sh hacks around this to filter out spurious warnings
+            # - could pass reads missing mate pair to bowtie as unpaired input, but then
+            #   downstream stages can't distinguish merged reads from reads missing a mate pair
+            # "--dovetail", # allow dovetailed paired reads to be considered concordantly aligned
+        ]
 
         if self.reorder:
-            cmd += ["--reorder"] # output in same order as input for debugging purposes
+            cmd += ["--reorder"]  # output in same order as input for debugging purposes
 
         cmd += ["--tab6", "-"]
-        #cmd += ["-U", "{fastq}"]
+        # cmd += ["-U", "{fastq}"]
 
         cmd += ["-x", "{index}"]
         cmd += ["<", "{tab6}"]
         cmd += ["-S", "{aligned}"]
-        #cmd += [">", "{aligned}"]
-        cmd = ' '.join(cmd)
+        # cmd += [">", "{aligned}"]
+        cmd = " ".join(cmd)
         return cmd
 
     def after_run_message(self):
         # Note: Bowtie2 alignment stats are written to its stderr,
         # but the wrapper hack redirects stderr into stdout to enable suppressing some warnings
         return self.read_stdout()
-        #return self.read_stderr()
+        # return self.read_stderr()
 
 
 class StarIndexBuilder(Component):
     out_extension = ""
 
-    def __init__(self,
-                 target=None,
-                 num_targets=None,
-                 total_target_length=None,
-                 nproc=None,
-                 genomeSAindexNbase=None,
-                 **kwargs):
+    def __init__(
+        self,
+        target=None,
+        num_targets=None,
+        total_target_length=None,
+        nproc=None,
+        genomeSAindexNbase=None,
+        **kwargs
+    ):
         self.num_targets = num_targets
         self.total_target_length = total_target_length
         self.nproc = nproc
         super().__init__(**kwargs)
-        self.add(InputNode(name="target",
-                           filename=target,
-                           parallel=False))
+        self.add(InputNode(name="target", filename=target, parallel=False))
         # - index folder must exist before running STAR,
         #   but temp folder must not exist
-        self.add(OutputNode(name="index",
-                            isfolder=True))
-        self.add(OutputNode(name="temp",
-                            isfolder=True,
-                            make_parent=True,
-                            error_on_existing=True))
-        self.add(OutputNode(name="logs",
-                            isfolder=True))
+        self.add(OutputNode(name="index", isfolder=True))
+        self.add(
+            OutputNode(
+                name="temp", isfolder=True, make_parent=True, error_on_existing=True
+            )
+        )
+        self.add(OutputNode(name="logs", isfolder=True))
         self.add(StdoutNode())
         self.add(StderrNode())
         # The STAR manual recommends setting genomeSAindexNbases to
@@ -440,68 +451,82 @@ class StarIndexBuilder(Component):
         # The manual also recommends setting genomeChrBinNbits to
         # min(18, log2(GenomeLength/NumberOfReferences))
         if genomeSAindexNbase == 0:
-            self.genomeSAindexNbase = int(round(min(14, log2(self.total_target_length) / 2.0 - 1)))
+            self.genomeSAindexNbase = int(
+                round(min(14, log2(self.total_target_length) / 2.0 - 1))
+            )
         else:
             # allow setting directly (small target sequences may still segfault and require a
             # lower value (3 or 2))
             self.genomeSAindexNbase = genomeSAindexNbase
-        self.genomeChrBinNbits = int(min(18, log2(self.total_target_length)/self.num_targets))
+        self.genomeChrBinNbits = int(
+            min(18, log2(self.total_target_length) / self.num_targets)
+        )
 
     def cmd(self):
-        cmd = ["STAR",
-               "--runMode", "genomeGenerate",
-               "--genomeDir", "{index}",
-               "--outTmpDir", "{temp}",
-               "--outFileNamePrefix", "{logs}/",
-               "--genomeFastaFiles", "{target}",
-               "--runThreadN", str(self.nproc),
-               "--genomeSAindexNbases", str(self.genomeSAindexNbase),
-               "--genomeChrBinNbits", str(self.genomeChrBinNbits)]
+        cmd = [
+            "STAR",
+            "--runMode",
+            "genomeGenerate",
+            "--genomeDir",
+            "{index}",
+            "--outTmpDir",
+            "{temp}",
+            "--outFileNamePrefix",
+            "{logs}/",
+            "--genomeFastaFiles",
+            "{target}",
+            "--runThreadN",
+            str(self.nproc),
+            "--genomeSAindexNbases",
+            str(self.genomeSAindexNbase),
+            "--genomeChrBinNbits",
+            str(self.genomeChrBinNbits),
+        ]
         return cmd
+
 
 # WARNING: unlike Bowtie2, STAR will align to all indices in a directory
 # WARNING: STAR's performance degrades significantly if target sequences
-#          are incomplete (for example, only providing the small subunit 
+#          are incomplete (for example, only providing the small subunit
 #          ribosomal sequence when both subunits are present in the data)
 # FIXME: STAR is reporting a sizable fraction of multimappers even for a simple
 #        amplicon dataset with a single target. Might be a result of ambiguous
 #        indel alignment - need to figure out if that influences STAR's MAPQ values.
 class StarAligner(Component):
-    def __init__(self,
-                 reorder=False,
-                 disable_soft_clipping=False,
-                 nproc=None,
-                 paired=False,
-                 shared_index=False,
-                 fixed_index=None, # for debugging
-                 **kwargs):
-        #require_explicit_kwargs(locals())
+    def __init__(
+        self,
+        reorder=False,
+        disable_soft_clipping=False,
+        nproc=None,
+        paired=False,
+        shared_index=False,
+        fixed_index=None,  # for debugging
+        **kwargs
+    ):
+        # require_explicit_kwargs(locals())
         self.reorder = reorder
         self.nproc = nproc
         self.disable_soft_clipping = disable_soft_clipping
-        self.shared_index = shared_index # use shared-memory index (seems buggy)
-        self.fixed_index = fixed_index # use index located at given path
+        self.shared_index = shared_index  # use shared-memory index (seems buggy)
+        self.fixed_index = fixed_index  # use index located at given path
         # Note: STAR does not natively support mixed paired/unpaired input or
         #       interleaved fastq
         self.paired = paired
         super().__init__(**kwargs)
         if fixed_index is None:
-            self.add(InputNode(name="index",
-                               isfolder=True))
+            self.add(InputNode(name="index", isfolder=True))
         if paired:
             self.add(InputNode(name="R1"))
             self.add(InputNode(name="R2"))
         else:
             self.add(InputNode(name="fastq", parallel=True))
-        self.add(OutputNode(name="temp",
-                            isfolder=True,
-                            make_parent=True,
-                            error_on_existing=True))
-        self.add(OutputNode(name="logs",
-                            isfolder=True))
-        self.add(OutputNode(name="aligned",
-                            extension="sam",
-                            parallel=True))
+        self.add(
+            OutputNode(
+                name="temp", isfolder=True, make_parent=True, error_on_existing=True
+            )
+        )
+        self.add(OutputNode(name="logs", isfolder=True))
+        self.add(OutputNode(name="aligned", extension="sam", parallel=True))
         self.add(StderrNode())
 
     def cmd(self):
@@ -516,15 +541,20 @@ class StarAligner(Component):
         else:
             cmd += ["--alignEndsType", "EndToEnd"]
         cmd += [
-               "--scoreGap", "-1000000",  # disable splice junction detection
-               # reduce gap extension penalties (multinuc gaps are
-               # a large part of the signal)
-               "--scoreDelBase", "-1",
-               "--scoreInsBase", "-1",
-               # disable filtering by mismatch counts
-               "--outFilterMismatchNmax", "999",
-               "--outFilterMismatchNoverLmax", "999",
-               ]
+            "--scoreGap",
+            "-1000000",  # disable splice junction detection
+            # reduce gap extension penalties (multinuc gaps are
+            # a large part of the signal)
+            "--scoreDelBase",
+            "-1",
+            "--scoreInsBase",
+            "-1",
+            # disable filtering by mismatch counts
+            "--outFilterMismatchNmax",
+            "999",
+            "--outFilterMismatchNoverLmax",
+            "999",
+        ]
         if self.reorder:
             cmd += ["--outSAMorder", "PairedKeepInputOrder"]
         if self.shared_index:
@@ -533,47 +563,64 @@ class StarAligner(Component):
             cmd += ["--genomeDir", self.fixed_index]
         else:
             cmd += ["--genomeDir", "{index}"]
-        cmd += ["--runMode", "alignReads",
-
-                # only report one of the top alignments for a read that maps to multiple locations
-                "--outMultimapperOrder", "Random",
-                "--outSAMmultNmax", "1",
-                "--outStd", "SAM",
-                "--outSAMattributes", "MD",
-                "--outTmpDir", "{temp}",
-                "--outFileNamePrefix", "{logs}/",
-
-                "> ", "{aligned}"]
+        cmd += [
+            "--runMode",
+            "alignReads",
+            # only report one of the top alignments for a read that maps to multiple locations
+            "--outMultimapperOrder",
+            "Random",
+            "--outSAMmultNmax",
+            "1",
+            "--outStd",
+            "SAM",
+            "--outSAMattributes",
+            "MD",
+            "--outTmpDir",
+            "{temp}",
+            "--outFileNamePrefix",
+            "{logs}/",
+            "> ",
+            "{aligned}",
+        ]
         return cmd
 
     def after_run_message(self):
-        return open(os.path.join(self.logs.output_nodes[0].foldername, "Log.final.out"), "rU").read()
+        return open(
+            os.path.join(self.logs.output_nodes[0].foldername, "Log.final.out"), "rU"
+        ).read()
 
 
 class StarAlignerMixedInput(Component):
-    '''
+    """
     Wrapper for STAR aligner to support mixed paired/unpaired input
     (spawns two STAR instances and mixes output streams)
-    '''
-    def __init__(self,
-                 reorder=False,
-                 disable_soft_clipping=False,
-                 nproc=None,
-                 star_shared_index=False,
-                 **kwargs):
+    """
+
+    def __init__(
+        self,
+        reorder=False,
+        disable_soft_clipping=False,
+        nproc=None,
+        star_shared_index=False,
+        **kwargs
+    ):
         super().__init__(**kwargs)
         deinterleaver = Deinterleaver()
-        aligner_kwargs = dict(reorder=reorder,
-                              disable_soft_clipping=disable_soft_clipping,
-                              nproc=nproc)
-        aligner_paired = StarAligner(name="StarAligner_paired",
-                                     paired=True,
-                                     shared_index=star_shared_index,
-                                     **aligner_kwargs)
-        aligner_unpaired = StarAligner(name="StarAligner_unpaired",
-                                       paired=False,
-                                       shared_index=star_shared_index,
-                                       **aligner_kwargs)
+        aligner_kwargs = dict(
+            reorder=reorder, disable_soft_clipping=disable_soft_clipping, nproc=nproc
+        )
+        aligner_paired = StarAligner(
+            name="StarAligner_paired",
+            paired=True,
+            shared_index=star_shared_index,
+            **aligner_kwargs
+        )
+        aligner_unpaired = StarAligner(
+            name="StarAligner_unpaired",
+            paired=False,
+            shared_index=star_shared_index,
+            **aligner_kwargs
+        )
         sam_mixer = SamMixer()
         connect(deinterleaver.R1, aligner_paired.R1)
         connect(deinterleaver.R2, aligner_paired.R2)
@@ -585,10 +632,7 @@ class StarAlignerMixedInput(Component):
         self.add(SharedInputNode(name="index"))
         connect(self.index, [aligner_paired.index, aligner_unpaired.index])
 
-        self.add([deinterleaver,
-                  aligner_paired,
-                  aligner_unpaired,
-                  sam_mixer])
+        self.add([deinterleaver, aligner_paired, aligner_unpaired, sam_mixer])
         # allow access to some nodes from this component's namespace
         self.add_node(aligner_paired.index)
         self.add(deinterleaver.interleaved, alias="interleaved_fastq")
@@ -596,60 +640,63 @@ class StarAlignerMixedInput(Component):
 
 
 class BowtieAlignerMixedInput(Component):
-    '''
+    """
     Wrapper for Bowtie2 aligner to support interleaved fastq input with
     mixed paired/unpaired.
-    '''
-    def __init__(self,
-                 reorder=False,
-                 disable_soft_clipping=False,
-                 nproc=None,
-                 maxins=None,
-                 max_search_depth=None,
-                 max_reseed=None,
-                 **kwargs):
+    """
+
+    def __init__(
+        self,
+        reorder=False,
+        disable_soft_clipping=False,
+        nproc=None,
+        maxins=None,
+        max_search_depth=None,
+        max_reseed=None,
+        **kwargs
+    ):
         super().__init__(**kwargs)
         tab6interleaver = Tab6Interleaver()
-        aligner_kwargs = dict(reorder=reorder,
-                              disable_soft_clipping=disable_soft_clipping,
-                              nproc=nproc,
-                              maxins=maxins,
-                              max_reseed=max_reseed,
-                              max_search_depth=max_search_depth)
-        aligner = BowtieAligner(name="BowtieAligner",
-                                **aligner_kwargs)
+        aligner_kwargs = dict(
+            reorder=reorder,
+            disable_soft_clipping=disable_soft_clipping,
+            nproc=nproc,
+            maxins=maxins,
+            max_reseed=max_reseed,
+            max_search_depth=max_search_depth,
+        )
+        aligner = BowtieAligner(name="BowtieAligner", **aligner_kwargs)
         connect(tab6interleaver.tab6, aligner.tab6)
-        self.add([tab6interleaver,
-                  aligner])
+        self.add([tab6interleaver, aligner])
         self.add(tab6interleaver.fastq, alias="interleaved_fastq")
         self.add(aligner.index, alias="index")
         self.add(aligner.aligned, alias="aligned")
 
 
-
-
 class MutationParser(Component):
-    def __init__(self,
-                 min_mapq=None,
-                 right_align_ambig_dels=None,
-                 right_align_ambig_ins=None,
-                 random_primer_len=None,
-                 min_mutation_separation=None,
-                 min_qual=None,
-                 mutation_type=None,
-                 variant_mode=None,
-                 maxins=None,
-                 amplicon=None,
-                 input_is_unpaired=None,
-                max_primer_offset=None,
-                require_forward_primer_mapped=None,
-                require_reverse_primer_mapped=None,
-                trim_primers=None,
-                debug_out=None,
-                 **kwargs):
-        self.min_mapq = 35 # FIXME: clarify or remove this, since this gets used for
-                           # sequence variant correction instead of the lower default
-                           # value of 30 for mutation counting
+    def __init__(
+        self,
+        min_mapq=None,
+        right_align_ambig_dels=None,
+        right_align_ambig_ins=None,
+        random_primer_len=None,
+        min_mutation_separation=None,
+        min_qual=None,
+        mutation_type=None,
+        variant_mode=None,
+        maxins=None,
+        amplicon=None,
+        input_is_unpaired=None,
+        max_primer_offset=None,
+        require_forward_primer_mapped=None,
+        require_reverse_primer_mapped=None,
+        trim_primers=None,
+        debug_out=None,
+        **kwargs
+    ):
+        self.min_mapq = 35  # FIXME: clarify or remove this, since this gets used for
+        # sequence variant correction instead of the lower default
+        # value of 30 for mutation counting
         super().__init__(**kwargs)
         self.min_mapq = min_mapq
         self.right_align_ambig_dels = right_align_ambig_dels
@@ -661,7 +708,7 @@ class MutationParser(Component):
         self.maxins = 800
         self.input_is_unpaired = input_is_unpaired
         if maxins is not None:
-            self.maxins = maxins # analogous to bowtie2's --maxins param
+            self.maxins = maxins  # analogous to bowtie2's --maxins param
         self.variant_mode = variant_mode
 
         self.amplicon = amplicon
@@ -675,19 +722,21 @@ class MutationParser(Component):
         self.add(InputNode(name="input"))
         if self.amplicon:
             self.add(InputNode(name="primers"))
-        self.add(OutputNode(name="parsed_mutations",
-                            extension="mut",
-                            parallel=True))
+        self.add(OutputNode(name="parsed_mutations", extension="mut", parallel=True))
         if self.write_debug_out:
             self.add(OutputNode(name="debug_out", parallel=True))
         self.add(StdoutNode())
         self.add(StderrNode())
 
     def cmd(self):
-        cmd = ["shapemapper_mutation_parser",
-               "-i", "{input}",
-               "-o", "{parsed_mutations}",
-               "-w"]
+        cmd = [
+            "shapemapper_mutation_parser",
+            "-i",
+            "{input}",
+            "-o",
+            "{parsed_mutations}",
+            "-w",
+        ]
         if self.min_mapq is not None:
             cmd += ["-m", "{}".format(self.min_mapq)]
         if self.right_align_ambig_dels is not None and self.right_align_ambig_dels:
@@ -695,12 +744,12 @@ class MutationParser(Component):
         if self.right_align_ambig_ins is not None and self.right_align_ambig_ins:
             cmd += ["--right_align_ambig_ins"]
         if self.random_primer_len is not None:
-            cmd += ["--exclude_3prime", str(self.random_primer_len+1)]
+            cmd += ["--exclude_3prime", str(self.random_primer_len + 1)]
         if self.min_mutation_separation is not None:
-            cmd += ["--max_internal_match", str(self.min_mutation_separation-1)]
+            cmd += ["--max_internal_match", str(self.min_mutation_separation - 1)]
         if self.min_qual is not None:
             cmd += ["--min_qual", str(self.min_qual)]
-        if self.mutation_type != '':
+        if self.mutation_type != "":
             cmd += ["--use_only_mutation_type", "{mutation_type}"]
         if self.maxins is not None and self.maxins:
             cmd += ["--max_paired_fragment_length", str(self.maxins)]
@@ -719,25 +768,27 @@ class MutationParser(Component):
             cmd += ["--trim_primers"]
         if self.write_debug_out:
             cmd += ["--debug_out", "{debug_out}"]
-        #cmd += ["--debug"] # FIXME: remove
+        # cmd += ["--debug"] # FIXME: remove
         return cmd
 
 
 class MutationCounter(Component):
-    def __init__(self,
-                 target_length=None,
-                 primer_pairs=None,
-                 variant_out=None,
-                 mutations_out=None,
-                 per_read_histograms=False,
-                 separate_ambig_counts=None,
-                 **kwargs):
+    def __init__(
+        self,
+        target_length=None,
+        primer_pairs=None,
+        variant_out=None,
+        mutations_out=None,
+        per_read_histograms=False,
+        separate_ambig_counts=None,
+        **kwargs
+    ):
         super().__init__(**kwargs)
         self.per_read_histograms = per_read_histograms
         self.separate_ambig_counts = separate_ambig_counts
         self.add(InputNode(name="mut"))
 
-        # target_length is either an int parameter, or an OutputNode outputting 
+        # target_length is either an int parameter, or an OutputNode outputting
         # a file containing the target_length parameter (this is to allow
         # this component to get updated sequence length after sequence correction)
         if isinstance(target_length, int):
@@ -761,14 +812,12 @@ class MutationCounter(Component):
             kw = {"name": "variants"}
             if isinstance(variant_out, str):
                 kw["filename"] = variant_out
-            self.add(OutputNode(parallel=False,
-                                **kw))
+            self.add(OutputNode(parallel=False, **kw))
         if mutations_out is not None and mutations_out:
             kw = {"name": "mutations"}
             if isinstance(mutations_out, str):
                 kw["filename"] = mutations_out
-            self.add(OutputNode(parallel=False,
-                                **kw))
+            self.add(OutputNode(parallel=False, **kw))
 
         self.add(StdoutNode())
         self.add(StderrNode())
@@ -807,19 +856,17 @@ class MutationCounter(Component):
                 break
         end_i = 0
         if found_table:
-            for i in range(len(lines)-1,-1,-1):
+            for i in range(len(lines) - 1, -1, -1):
                 if lines[i] == "--------------------":
                     end_i = i
                     break
-            return "\n".join(lines[start_i:end_i+1])
+            return "\n".join(lines[start_i : end_i + 1])
         else:
             return ""
 
 
 class ProgressMonitor(Component):
-    def __init__(self,
-                 input=None,
-                 **kwargs):
+    def __init__(self, input=None, **kwargs):
         self.expected_bytes = None
         super().__init__(**kwargs)
         self.add(InputNode())
@@ -839,58 +886,63 @@ class ProgressMonitor(Component):
 
     # need direct access to stderr pipe for things to work as expected
     # FIXME: see if I can get things working using stderr output file instead
-    def start_process(self,
-                      verbose=False):
-        kwargs = {"shell": True,
-                  "executable": "/bin/bash",
-                  "stderr": subprocess.PIPE,
-                  "preexec_fn": os.setsid}
-        self.proc = sp.Popen(self.format_command(self.cmd()),
-                             **kwargs)
+    def start_process(self, verbose=False):
+        kwargs = {
+            "shell": True,
+            "executable": "/bin/bash",
+            "stderr": subprocess.PIPE,
+            "preexec_fn": os.setsid,
+        }
+        self.proc = sp.Popen(self.format_command(self.cmd()), **kwargs)
 
 
 class CalcProfile(Component):
-    def __init__(self,
-                 mindepth=None,
-                 maxbg=None,
-                 random_primer_len = None,
-                 num_samples=3,
-                 target=None,
-                 target_name=None,
-                 **kwargs):
+    def __init__(
+        self,
+        mindepth=None,
+        maxbg=None,
+        random_primer_len=None,
+        num_samples=3,
+        target=None,
+        target_name=None,
+        **kwargs
+    ):
         self.mindepth = mindepth
         self.maxbg = maxbg
         self.random_primer_len = random_primer_len
         self.target_name = target_name
         super().__init__(**kwargs)
-        self.add(InputNode(name="target",
-                           parallel=False))
+        self.add(InputNode(name="target", parallel=False))
         if target is not None:
             if isinstance(target, Node):
                 connect(target, self.target)
             elif isinstance(target, str):
                 self.target.set_file(target)
-        self.add(OutputNode(name="profile",
-                            parallel=False))
+        self.add(OutputNode(name="profile", parallel=False))
 
         assert num_samples > 0
         samples = ["modified", "untreated", "denatured"]
         for i in range(num_samples):
-            self.add(InputNode(name="counts_{}".format(samples[i]),
-                               parallel=False))
+            self.add(InputNode(name="counts_{}".format(samples[i]), parallel=False))
 
         self.add(StdoutNode())
         self.add(StderrNode())
 
     def cmd(self):
-        cmd = [pyexe,
-               os.path.join(bin_dir, "make_reactivity_profiles.py"),
-               "--fa", "{target}"]
+        cmd = [
+            pyexe,
+            os.path.join(bin_dir, "make_reactivity_profiles.py"),
+            "--fa",
+            "{target}",
+        ]
         if self.target_name is not None:
             cmd += ["--rna", '"{}"'.format(self.target_name)]
         cmd += ["--counts"]
-        cmd += ["{{{}}}".format(n.get_name()) for n in self.input_nodes
-                if n.get_name().startswith("counts")]
+        cmd += [
+            "{{{}}}".format(n.get_name())
+            for n in self.input_nodes
+            if n.get_name().startswith("counts")
+        ]
         cmd += ["--out", "{profile}"]
         if self.mindepth is not None:
             cmd += ["--mindepth", str(self.mindepth)]
@@ -903,32 +955,26 @@ class CalcProfile(Component):
 
 
 class NormProfile(Component):
-    def __init__(self,
-                 profile=None,
-                 profiles=None,
-                 target_name=None,
-                 target_names=None,
-                 **kwargs):
+    def __init__(
+        self, profile=None, profiles=None, target_name=None, target_names=None, **kwargs
+    ):
         super().__init__(**kwargs)
         if profile is not None and profiles is not None:
             raise RuntimeError(
-                "Error: for NormProfile component __init__(), can specify either profile or profiles, but not both.")
+                "Error: for NormProfile component __init__(), can specify either profile or profiles, but not both."
+            )
         if profile is not None:
-            self.add(InputNode(name="profile",
-                               parallel=False))
+            self.add(InputNode(name="profile", parallel=False))
             if isinstance(profile, str):
                 self.profile.set_file(profile)
             else:
                 connect(profile, self.profile)
-            self.add(OutputNode(name="normed",
-                                parallel=False,
-                                assoc_rna=target_name))
+            self.add(OutputNode(name="normed", parallel=False, assoc_rna=target_name))
         elif profiles is not None:
             for i in range(len(profiles)):
                 name = "profile_{}".format(i + 1)
                 outname = "normed_{}".format(i + 1)
-                self.add(InputNode(name=name,
-                                   parallel=False))
+                self.add(InputNode(name=name, parallel=False))
                 if isinstance(profiles[i], str):
                     self.__getattr__(name).set_file(profiles[i])
                 else:
@@ -938,25 +984,22 @@ class NormProfile(Component):
                     assoc_rna = target_names[i]
                 except IndexError:
                     pass
-                self.add(OutputNode(name=outname,
-                                    parallel=False,
-                                    assoc_rna=assoc_rna))
+                self.add(OutputNode(name=outname, parallel=False, assoc_rna=assoc_rna))
         else:
             # if no profiles provided, default to single profile input/output
-            self.add(InputNode(name="profile",
-                               parallel=False))
-            self.add(OutputNode(name="normed",
-                                parallel=False,
-                                assoc_rna=target_name))
+            self.add(InputNode(name="profile", parallel=False))
+            self.add(OutputNode(name="normed", parallel=False, assoc_rna=target_name))
 
         self.add(StdoutNode())
         self.add(StderrNode())
 
     def cmd(self):
-        cmd = [pyexe,
-               os.path.join(bin_dir, "normalize_profiles.py"),
-               "--warn-on-error", # don't crash if not enough data to normalize
-               "--tonorm"]
+        cmd = [
+            pyexe,
+            os.path.join(bin_dir, "normalize_profiles.py"),
+            "--warn-on-error",  # don't crash if not enough data to normalize
+            "--tonorm",
+        ]
         for node in self.input_nodes:
             name = node.get_name()
             cmd += ["{{{}}}".format(name)]
@@ -968,42 +1011,44 @@ class NormProfile(Component):
             cmd += ["{{{}}}".format(name)]
         return cmd
 
+
 # FIXME: add --primers input for primers file if provided
 class RenderFigures(Component):
-    def __init__(self,
-                 amplicon=False,
-                 do_profiles=True,
-                 do_histograms=True,
-                 mindepth=5000,
-                 maxbg=0.05,
-                 **kwargs):
+    def __init__(
+        self,
+        amplicon=False,
+        do_profiles=True,
+        do_histograms=True,
+        mindepth=5000,
+        maxbg=0.05,
+        **kwargs
+    ):
         self.amplicon = amplicon
         # TODO: expose the params min_depth_pass_frac, max_high_bg_frac, min_positive
         self.mindepth = mindepth
         self.maxbg = maxbg
         super().__init__(**kwargs)
-        self.add(InputNode(name="profile",
-                           parallel=False))
+        self.add(InputNode(name="profile", parallel=False))
         if self.amplicon:
-            self.add(InputNode(name="primers",
-                               parallel=False))
+            self.add(InputNode(name="primers", parallel=False))
         if do_profiles:
-            self.add(OutputNode(name="profiles_fig",
-                                extension="pdf",
-                                parallel=False))
+            self.add(OutputNode(name="profiles_fig", extension="pdf", parallel=False))
         if do_histograms:
-            self.add(OutputNode(name="histograms_fig",
-                                extension="pdf",
-                                parallel=False))
+            self.add(OutputNode(name="histograms_fig", extension="pdf", parallel=False))
         self.add(StdoutNode())
         self.add(StderrNode())
 
     def cmd(self):
-        cmd = [pyexe,
-               os.path.join(bin_dir, "render_figures.py"),
-               "--infile", "{profile}",
-               "--mindepth", str(self.mindepth),
-               "--maxbg", str(self.maxbg)]
+        cmd = [
+            pyexe,
+            os.path.join(bin_dir, "render_figures.py"),
+            "--infile",
+            "{profile}",
+            "--mindepth",
+            str(self.mindepth),
+            "--maxbg",
+            str(self.maxbg),
+        ]
         if self.amplicon:
             cmd += ["--primers", "{primers}"]
         node_names = [n.get_name() for n in self.output_nodes]
@@ -1020,34 +1065,30 @@ class RenderFigures(Component):
 
 
 class RenderMappedDepths(Component):
-    def __init__(self,
-                 amplicon=False,
-                 **kwargs):
-        self.amplicon=amplicon
+    def __init__(self, amplicon=False, **kwargs):
+        self.amplicon = amplicon
         super().__init__(**kwargs)
-        self.add(InputNode(name="profile",
-                           parallel=False))
+        self.add(InputNode(name="profile", parallel=False))
         if self.amplicon:
-            self.add(InputNode(name="primer_locations",
-                               parallel=False))
-            self.add(OutputNode(name="est_abundances",
-                                extension="txt",
-                                parallel=False))
-        self.add(OutputNode(name="depth_fig",
-                            extension="pdf",
-                            parallel=False))
+            self.add(InputNode(name="primer_locations", parallel=False))
+            self.add(OutputNode(name="est_abundances", extension="txt", parallel=False))
+        self.add(OutputNode(name="depth_fig", extension="pdf", parallel=False))
         self.add(StdoutNode())
         self.add(StderrNode())
 
     def cmd(self):
-        cmd = [pyexe,
-               os.path.join(bin_dir, "render_mapped_depths.py"),
-               "--rna-name", self.assoc_rna,
-               "--tsv", "{profile}"]
+        cmd = [
+            pyexe,
+            os.path.join(bin_dir, "render_mapped_depths.py"),
+            "--rna-name",
+            self.assoc_rna,
+            "--tsv",
+            "{profile}",
+        ]
         if self.amplicon:
             cmd += ["--primer-locations", "{primer_locations}"]
             cmd += ["--estimated-abundances", "{est_abundances}"]
-        cmd += [ "--out", "{depth_fig}"]
+        cmd += ["--out", "{depth_fig}"]
         return cmd
 
     def after_run_message(self):
@@ -1057,31 +1098,29 @@ class RenderMappedDepths(Component):
 class TabToShape(Component):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.add(InputNode(name="profile",
-                           parallel=False))
-        self.add(OutputNode(name="shape",
-                            parallel=False,
-                            extension="shape"))
-        self.add(OutputNode(name="map",
-                            parallel=False,
-                            extension="map"))
-        self.add(OutputNode(name="varna",
-                            parallel=False,
-                            extension="txt"))
-        self.add(OutputNode(name="ribosketch",
-                            parallel=False,
-                            extension="txt"))
+        self.add(InputNode(name="profile", parallel=False))
+        self.add(OutputNode(name="shape", parallel=False, extension="shape"))
+        self.add(OutputNode(name="map", parallel=False, extension="map"))
+        self.add(OutputNode(name="varna", parallel=False, extension="txt"))
+        self.add(OutputNode(name="ribosketch", parallel=False, extension="txt"))
         self.add(StdoutNode())
         self.add(StderrNode())
 
     def cmd(self):
-        cmd = [pyexe,
-               os.path.join(bin_dir, "tab_to_shape.py"),
-               "--infile", "{profile}",
-               "--shape", "{shape}",
-               "--map", "{map}",
-               "--varna", "{varna}",
-               "--ribosketch", "{ribosketch}"]
+        cmd = [
+            pyexe,
+            os.path.join(bin_dir, "tab_to_shape.py"),
+            "--infile",
+            "{profile}",
+            "--shape",
+            "{shape}",
+            "--map",
+            "{map}",
+            "--varna",
+            "{varna}",
+            "--ribosketch",
+            "{ribosketch}",
+        ]
         return cmd
 
 
@@ -1094,25 +1133,29 @@ class ProfileHandler(Component):
 
     """
 
-    def __init__(self,
-                 target=None,
-                 target_name=None,
-                 mindepth=None,
-                 maxbg=None,
-                 random_primer_len=None,
-                 counts=None,
-                 norm=None,
-                 amplicon=None,
-                 **kwargs):
+    def __init__(
+        self,
+        target=None,
+        target_name=None,
+        mindepth=None,
+        maxbg=None,
+        random_primer_len=None,
+        counts=None,
+        norm=None,
+        amplicon=None,
+        **kwargs
+    ):
         require_explicit_kwargs(locals())
         super().__init__(**kwargs)
         target_name = target_name.strip().replace(" ", "_").replace("\t", "_")
-        profilemaker = CalcProfile(target=target,
-                                   target_name=target_name,
-                                   maxbg=maxbg,
-                                   mindepth=mindepth,
-                                   random_primer_len=random_primer_len,
-                                   num_samples=len(counts))
+        profilemaker = CalcProfile(
+            target=target,
+            target_name=target_name,
+            maxbg=maxbg,
+            mindepth=mindepth,
+            random_primer_len=random_primer_len,
+            num_samples=len(counts),
+        )
         self.add(profilemaker)
 
         self.add(profilemaker.target)
@@ -1135,12 +1178,12 @@ class ProfileHandler(Component):
         self.add(tabtoshaper)
         connect(profilenode, tabtoshaper.profile)
 
-        renderer = RenderFigures(assoc_rna=target_name,
-                                 mindepth=mindepth,
-                                 maxbg=maxbg,
-                                 amplicon=amplicon)
-        mapped_depth_renderer = RenderMappedDepths(assoc_rna=target_name,
-                                                   amplicon=amplicon)
+        renderer = RenderFigures(
+            assoc_rna=target_name, mindepth=mindepth, maxbg=maxbg, amplicon=amplicon
+        )
+        mapped_depth_renderer = RenderMappedDepths(
+            assoc_rna=target_name, amplicon=amplicon
+        )
         self.add([renderer, mapped_depth_renderer])
         connect(profilenode, renderer.profile)
         connect(profilenode, mapped_depth_renderer.profile)
@@ -1149,38 +1192,28 @@ class ProfileHandler(Component):
 class SequenceCorrector(Component):
     # FIXME: clarify class names (right now very similar names for nested components)
 
-    def __init__(self,
-                 target=None,
-                 target_name=None,
-                 mindepth=None,
-                 minfreq=None,
-                 **kwargs):
+    def __init__(
+        self, target=None, target_name=None, mindepth=None, minfreq=None, **kwargs
+    ):
         self.mindepth = mindepth
         self.minfreq = minfreq
         self.target_name = target_name
         super().__init__(**kwargs)
-        self.add(InputNode(name="target",
-                           parallel=False))
+        self.add(InputNode(name="target", parallel=False))
         if target is not None:
             self.target.set_file(target)
-        self.add(InputNode(name="variants",
-                           parallel=False))
-        self.add(OutputNode(name="corrected",
-                            extension="fa",
-                            parallel=False))
+        self.add(InputNode(name="variants", parallel=False))
+        self.add(OutputNode(name="corrected", extension="fa", parallel=False))
         self.add(StdoutNode())
         self.add(StderrNode())
 
     def cmd(self):
-        cmd = [pyexe,
-               os.path.join(bin_dir, "make_variant.py"),
-               "--fa", "{target}"]
+        cmd = [pyexe, os.path.join(bin_dir, "make_variant.py"), "--fa", "{target}"]
         # must provide name of sequence if multiple seqs present
         # in the input file
         if self.target_name is not None:
             cmd += ["--rna", '"{}"'.format(self.target_name)]
-        cmd += ["--variants", "{variants}",
-               "--out", "{corrected}"]
+        cmd += ["--variants", "{variants}", "--out", "{corrected}"]
 
         if self.mindepth is not None:
             cmd += ["--mindepth", str(self.mindepth)]
@@ -1199,9 +1232,7 @@ class SequenceCorrector(Component):
 
 
 class SplitByTarget(Component):
-    def __init__(self,
-                 target_names=None,
-                 **kwargs):
+    def __init__(self, target_names=None, **kwargs):
         require_explicit_kwargs(locals())
         super().__init__(**kwargs)
         self.add(InputNode(name="input"))
@@ -1209,19 +1240,22 @@ class SplitByTarget(Component):
         self.add(StderrNode())
         self.target_names = target_names
         for i in range(len(target_names)):
-            self.add(OutputNode(name="rna_{}".format(i + 1),
-                                extension="passthrough",
-                                assoc_rna=target_names[i]))
+            self.add(
+                OutputNode(
+                    name="rna_{}".format(i + 1),
+                    extension="passthrough",
+                    assoc_rna=target_names[i],
+                )
+            )
             # TODO: store dict of output nodes indexed by target name? less fragile than int index
 
     def cmd(self):
-        cmd = [pyexe,
-               os.path.join(bin_dir, "split_by_target.py")]
-        cmd += ['-i', "{input}"]
-        cmd += ['-n']
+        cmd = [pyexe, os.path.join(bin_dir, "split_by_target.py")]
+        cmd += ["-i", "{input}"]
+        cmd += ["-n"]
         for n in self.target_names:
-            cmd += ['"'+n+'"']
-        cmd += ['-o']
+            cmd += ['"' + n + '"']
+        cmd += ["-o"]
         for i in range(len(self.target_names)):
             node_name = "rna_{}".format(i + 1)
             cmd += ["{{{}}}".format(node_name)]
@@ -1229,27 +1263,27 @@ class SplitByTarget(Component):
 
 
 class GetSequenceLengths(Component):
-    def __init__(self,
-                 target_names=None,
-                 **kwargs):
+    def __init__(self, target_names=None, **kwargs):
         require_explicit_kwargs(locals())
         super().__init__(**kwargs)
-        self.add(InputNode(name="fasta",
-                           parallel=False))
+        self.add(InputNode(name="fasta", parallel=False))
         self.add(StdoutNode())
         self.add(StderrNode())
         self.target_names = target_names
         for i in range(len(target_names)):
-            self.add(OutputNode(name="L{}".format(i + 1),
-                                extension="",
-                                assoc_rna=target_names[i],
-                                parallel=False))
+            self.add(
+                OutputNode(
+                    name="L{}".format(i + 1),
+                    extension="",
+                    assoc_rna=target_names[i],
+                    parallel=False,
+                )
+            )
 
     def cmd(self):
-        cmd = [pyexe,
-               os.path.join(bin_dir, "get_sequence_lengths.py")]
-        cmd += ['--fa', "{fasta}"]
-        cmd += ['--out']
+        cmd = [pyexe, os.path.join(bin_dir, "get_sequence_lengths.py")]
+        cmd += ["--fa", "{fasta}"]
+        cmd += ["--out"]
         for i in range(len(self.target_names)):
             node_name = "L{}".format(i + 1)
             cmd += ["{{{}}}".format(node_name)]
@@ -1257,12 +1291,14 @@ class GetSequenceLengths(Component):
 
 
 class PrimerLocator(Component):
-    def __init__(self,
-                 fastas=None,
-                 target_names=None,
-                 primer_files=None,
-                 primers_in_sequence=None,
-                 **kwargs):
+    def __init__(
+        self,
+        fastas=None,
+        target_names=None,
+        primer_files=None,
+        primers_in_sequence=None,
+        **kwargs
+    ):
         require_explicit_kwargs(locals())
         super().__init__(**kwargs)
         self.fastas = fastas
@@ -1271,27 +1307,34 @@ class PrimerLocator(Component):
         self.primers_in_sequence = primers_in_sequence
         # FIXME: maybe move some of this boilerplate multinode input/output stuff to Component
         for i in range(len(fastas)):
-            self.add(InputNode(name="fasta_{}".format(i+1),
-                               filename=fastas[i]))
+            self.add(InputNode(name="fasta_{}".format(i + 1), filename=fastas[i]))
         for i in range(len(primer_files)):
-            self.add(InputNode(name="primers_{}".format(i+1),
-                               filename=primer_files[i]))
+            self.add(
+                InputNode(name="primers_{}".format(i + 1), filename=primer_files[i])
+            )
         for i in range(len(target_names)):
-            self.add(OutputNode(name="locs_{}".format(i+1),
-                                extension="txt",
-                                assoc_rna=target_names[i],
-                                parallel=False))
+            self.add(
+                OutputNode(
+                    name="locs_{}".format(i + 1),
+                    extension="txt",
+                    assoc_rna=target_names[i],
+                    parallel=False,
+                )
+            )
             # will be linked to ParameterNode of MutationCounter
-            self.add(OutputNode(name="n_pairs_{}".format(i+1),
-                                extension="txt",
-                                assoc_rna=target_names[i],
-                                parallel=False))
-        #self.add(StdoutNode())
+            self.add(
+                OutputNode(
+                    name="n_pairs_{}".format(i + 1),
+                    extension="txt",
+                    assoc_rna=target_names[i],
+                    parallel=False,
+                )
+            )
+        # self.add(StdoutNode())
         self.add(StderrNode())
 
     def cmd(self):
-        cmd = [pyexe,
-               os.path.join(this_dir, "locate_primers.py")]
+        cmd = [pyexe, os.path.join(this_dir, "locate_primers.py")]
         cmd += ["--fastas"]
         for i in range(len(self.fastas)):
             node_name = "fasta_{}".format(i + 1)
@@ -1299,7 +1342,7 @@ class PrimerLocator(Component):
         if len(self.primer_files) > 0:
             cmd += ["--primer-files"]
             for i in range(len(self.primer_files)):
-                node_name = "primers_{}".format(i+1)
+                node_name = "primers_{}".format(i + 1)
                 cmd += ["{{{}}}".format(node_name)]
         if self.primers_in_sequence:
             cmd += ["--primers-in-sequence"]
@@ -1322,9 +1365,7 @@ class SplitToFile(Component):
         super().__init__(**kwargs)
         self.add(StdinNode())
         self.add(StdoutNode(extension="passthrough"))
-        self.add(OutputNode(extension="passthrough",
-                            parallel=False,
-                            name="to_file"))
+        self.add(OutputNode(extension="passthrough", parallel=False, name="to_file"))
         self.add(StderrNode())
 
     def cmd(self):
@@ -1356,8 +1397,6 @@ def split_to_file_wrapper(component, selected_out_names=None):
 
     """
 
-
-
     wrapper = Component()
     wrapper.name = component.get_name()
     wrapper.assoc_rna = component.assoc_rna
@@ -1376,7 +1415,7 @@ def split_to_file_wrapper(component, selected_out_names=None):
         else:
             wrapper.add(node)
     for i, node in enumerate(split_nodes):
-        comp = SplitToFile(name="SplitToFile{}".format(i+1))
+        comp = SplitToFile(name="SplitToFile{}".format(i + 1))
         wrapper.add(comp)
         try:
             connected_node = node.output_nodes[0]
@@ -1404,32 +1443,38 @@ def split_to_file_wrapper(component, selected_out_names=None):
 
 
 class AlignPrep(Component):
-    def __init__(self,
-                 target=None,
-                 num_targets=None,
-                 total_target_length=None,
-                 star_aligner=None,
-                 genomeSAindexNbase=None,
-                 nproc=None,
-                 **kwargs):
+    def __init__(
+        self,
+        target=None,
+        num_targets=None,
+        total_target_length=None,
+        star_aligner=None,
+        genomeSAindexNbase=None,
+        nproc=None,
+        **kwargs
+    ):
         require_explicit_kwargs(locals())
-        if isinstance(target, list) and len(target)==1:
+        if isinstance(target, list) and len(target) == 1:
             # allow init with list of 1 target by re-initializing with that target
-            self.__init__(target=target[0],
-                          num_targets=num_targets,
-                          total_target_length=total_target_length,
-                          star_aligner=star_aligner,
-                          nproc=nproc,
-                          genomeSAindexNbase=genomeSAindexNbase,
-                          **kwargs)
+            self.__init__(
+                target=target[0],
+                num_targets=num_targets,
+                total_target_length=total_target_length,
+                star_aligner=star_aligner,
+                nproc=nproc,
+                genomeSAindexNbase=genomeSAindexNbase,
+                **kwargs
+            )
             return
         super().__init__(**kwargs)
 
         if star_aligner is not None and star_aligner:
-            indexbuilder = StarIndexBuilder(num_targets=num_targets,
-                                            total_target_length=total_target_length,
-                                            nproc=nproc,
-                                            genomeSAindexNbase=genomeSAindexNbase)
+            indexbuilder = StarIndexBuilder(
+                num_targets=num_targets,
+                total_target_length=total_target_length,
+                nproc=nproc,
+                genomeSAindexNbase=genomeSAindexNbase,
+            )
         else:
             indexbuilder = BowtieIndexBuilder()
         if isinstance(target, str):
@@ -1442,10 +1487,11 @@ class AlignPrep(Component):
             self.add(fastachecker)
         elif isinstance(target, list):
             # if multiple target files, combine into single file before Bowtie index build
-            fastacombine = Appender(inputs=target,
-                                    add_extra_newline=True)
+            fastacombine = Appender(inputs=target, add_extra_newline=True)
             for i in range(len(fastacombine.input_nodes)):
-                fastachecker = FastaFormatChecker(name="FastaFormatChecker_{}".format(i+1))
+                fastachecker = FastaFormatChecker(
+                    name="FastaFormatChecker_{}".format(i + 1)
+                )
                 connect(fastacombine.input_nodes[i].input_node, fastachecker.fasta)
                 self.add(fastachecker)
             self.add(fastacombine)
@@ -1457,26 +1503,30 @@ class AlignPrep(Component):
 
 
 class Sample(Component):
-    def __init__(self,
-                 R1=None, R2=None,
-                 U=None,
-                 o1=None, o2=None,
-                 assoc_sample=None,
-                 assoc_rna=None,
-                 min_qual_to_trim=None,
-                 window_to_trim=None,
-                 min_length_to_trim=None,
-                 preserve_order=None,
-                 total_target_length=None,
-                 star_aligner=None,
-                 star_shared_index=None,
-                 min_mapq=None,
-                 disable_soft_clipping=None,
-                 nproc=None,
-                 maxins=None,
-                 max_search_depth=None,
-                 max_reseed=None,
-                 **kwargs):
+    def __init__(
+        self,
+        R1=None,
+        R2=None,
+        U=None,
+        o1=None,
+        o2=None,
+        assoc_sample=None,
+        assoc_rna=None,
+        min_qual_to_trim=None,
+        window_to_trim=None,
+        min_length_to_trim=None,
+        preserve_order=None,
+        total_target_length=None,
+        star_aligner=None,
+        star_shared_index=None,
+        min_mapq=None,
+        disable_soft_clipping=None,
+        nproc=None,
+        maxins=None,
+        max_search_depth=None,
+        max_reseed=None,
+        **kwargs
+    ):
         """
         Note: (does not perform aligner index building, mutation parsing/counting,
          or reactivity profile creation)
@@ -1491,8 +1541,7 @@ class Sample(Component):
                 but not both)
 
         """
-        if not ((R1 is not None and R2 is not None) or
-                U is not None):
+        if not ((R1 is not None and R2 is not None) or U is not None):
             msg = "Error: must provide either R1+R2 or U, not both"
             raise RuntimeError(msg)
 
@@ -1507,13 +1556,13 @@ class Sample(Component):
         fastq_list = False
         if R1 is not None and isinstance(R1, list):
             fastq_list = True
-            if len(R1)==1:
+            if len(R1) == 1:
                 fastq_list = False
                 R1 = R1[0]
                 R2 = R2[0]
         elif U is not None and isinstance(U, list):
             fastq_list = True
-            if len(U)==1:
+            if len(U) == 1:
                 fastq_list = False
                 U = U[0]
 
@@ -1524,37 +1573,42 @@ class Sample(Component):
                 # add component to concatenate input files into single streams
                 append = Appender(inputs=U)
                 progmonitor = ProgressMonitor()
-                qtrimmer = QualityTrimmer(min_qual=min_qual_to_trim,
-                                          window=window_to_trim,
-                                          min_length=min_length_to_trim)
+                qtrimmer = QualityTrimmer(
+                    min_qual=min_qual_to_trim,
+                    window=window_to_trim,
+                    min_length=min_length_to_trim,
+                )
                 connect(append, progmonitor)
-                self.add([append,
-                          progmonitor,
-                          qtrimmer])
+                self.add([append, progmonitor, qtrimmer])
             else:
                 progmonitor = ProgressMonitor(input=U)
-                qtrimmer = QualityTrimmer(min_qual=min_qual_to_trim,
-                                          window=window_to_trim,
-                                          min_length=min_length_to_trim)
-                self.add([progmonitor,
-                          qtrimmer])
+                qtrimmer = QualityTrimmer(
+                    min_qual=min_qual_to_trim,
+                    window=window_to_trim,
+                    min_length=min_length_to_trim,
+                )
+                self.add([progmonitor, qtrimmer])
             connect(progmonitor, qtrimmer)
 
-            aligner_params = {"reorder": preserve_order,
-                              "assoc_rna": assoc_rna,
-                              "disable_soft_clipping": disable_soft_clipping,
-                              "nproc": nproc}
+            aligner_params = {
+                "reorder": preserve_order,
+                "assoc_rna": assoc_rna,
+                "disable_soft_clipping": disable_soft_clipping,
+                "nproc": nproc,
+            }
 
             if star_aligner is not None and star_aligner:
-                aligner = StarAligner(name="StarAligner",
-                                      paired=False,
-                                      **aligner_params)
+                aligner = StarAligner(
+                    name="StarAligner", paired=False, **aligner_params
+                )
                 connect(qtrimmer.trimmed, aligner.fastq)
             else:
-                aligner = BowtieAlignerMixedInput(maxins=maxins,
-                                                  max_search_depth=max_search_depth,
-                                                  max_reseed=max_reseed,
-                                                  **aligner_params)
+                aligner = BowtieAlignerMixedInput(
+                    maxins=maxins,
+                    max_search_depth=max_search_depth,
+                    max_reseed=max_reseed,
+                    **aligner_params
+                )
                 connect(qtrimmer.trimmed, aligner.interleaved_fastq)
             self.add(aligner)
 
@@ -1566,38 +1620,39 @@ class Sample(Component):
                 append1 = Appender(name="Appender1", inputs=R1)
                 append2 = Appender(name="Appender2", inputs=R2)
                 progmonitor = ProgressMonitor()
-                qtrimmer1 = QualityTrimmer(name="QualityTrimmer1",
-                                           min_qual=min_qual_to_trim,
-                                           window=window_to_trim,
-                                           min_length=min_length_to_trim)
-                qtrimmer2 = QualityTrimmer(name="QualityTrimmer2",
-                                           min_qual=min_qual_to_trim,
-                                           window=window_to_trim,
-                                           min_length=min_length_to_trim)
+                qtrimmer1 = QualityTrimmer(
+                    name="QualityTrimmer1",
+                    min_qual=min_qual_to_trim,
+                    window=window_to_trim,
+                    min_length=min_length_to_trim,
+                )
+                qtrimmer2 = QualityTrimmer(
+                    name="QualityTrimmer2",
+                    min_qual=min_qual_to_trim,
+                    window=window_to_trim,
+                    min_length=min_length_to_trim,
+                )
                 connect(append1, progmonitor)
                 connect(progmonitor, qtrimmer1)
                 connect(append2, qtrimmer2)
-                self.add([append1,
-                          append2,
-                          progmonitor,
-                          qtrimmer1,
-                          qtrimmer2])
+                self.add([append1, append2, progmonitor, qtrimmer1, qtrimmer2])
             else:
                 progmonitor = ProgressMonitor(input=R1)
-                qtrimmer1 = QualityTrimmer(name="QualityTrimmer1",
-                                           min_qual=min_qual_to_trim,
-                                           window=window_to_trim,
-                                           min_length=min_length_to_trim)
+                qtrimmer1 = QualityTrimmer(
+                    name="QualityTrimmer1",
+                    min_qual=min_qual_to_trim,
+                    window=window_to_trim,
+                    min_length=min_length_to_trim,
+                )
                 connect(progmonitor, qtrimmer1)
-                qtrimmer2 = QualityTrimmer(name="QualityTrimmer2",
-                                           min_qual=min_qual_to_trim,
-                                           window=window_to_trim,
-                                           min_length=min_length_to_trim,
-                                           fastq=R2)
-                self.add([progmonitor,
-                          qtrimmer1,
-                          qtrimmer2])
-            
+                qtrimmer2 = QualityTrimmer(
+                    name="QualityTrimmer2",
+                    min_qual=min_qual_to_trim,
+                    window=window_to_trim,
+                    min_length=min_length_to_trim,
+                    fastq=R2,
+                )
+                self.add([progmonitor, qtrimmer1, qtrimmer2])
 
             interleaver = Interleaver()
             merger = Merger(preserve_order=preserve_order)
@@ -1607,21 +1662,26 @@ class Sample(Component):
             self.add([interleaver])
             self.add([merger])
 
-            aligner_params = {"reorder":preserve_order,
-                              "assoc_rna":assoc_rna,
-                              "disable_soft_clipping":disable_soft_clipping,
-                              "nproc":nproc}
+            aligner_params = {
+                "reorder": preserve_order,
+                "assoc_rna": assoc_rna,
+                "disable_soft_clipping": disable_soft_clipping,
+                "nproc": nproc,
+            }
 
             if star_aligner is not None and star_aligner:
-                aligner = StarAlignerMixedInput(star_shared_index=star_shared_index,
-                                                **aligner_params)
+                aligner = StarAlignerMixedInput(
+                    star_shared_index=star_shared_index, **aligner_params
+                )
                 connect(merger.output, aligner.interleaved_fastq)
                 self.add(aligner)
             else:
-                aligner = BowtieAlignerMixedInput(maxins=maxins,
-                                                  max_search_depth=max_search_depth,
-                                                  max_reseed=max_reseed,
-                                                  **aligner_params)
+                aligner = BowtieAlignerMixedInput(
+                    maxins=maxins,
+                    max_search_depth=max_search_depth,
+                    max_reseed=max_reseed,
+                    **aligner_params
+                )
                 connect(merger.output, aligner.interleaved_fastq)
                 self.add(aligner)
 
@@ -1656,7 +1716,6 @@ class Sample(Component):
             n.assoc_sample = assoc_sample
 
 
-
 class PostAlignment(Component):
     """
     Contains components to parse and count mutations and create reactivity
@@ -1679,37 +1738,39 @@ class PostAlignment(Component):
         random_primer_len:
     """
 
-    def __init__(self,
-                 target_name=None,
-                 target_length=None,
-                 primer_pairs=None,
-                 target=None,
-                 num_samples=None,
-                 output_variant_counts=None,
-                 output_mutation_counts=None,
-                 min_mapq=None,
-                 maxins=None,
-                 input_is_unpaired=None,
-                 min_depth=None,
-                 max_bg=None,
-                 norm=None,
-                 separate_ambig_counts=None,
-                 right_align_ambig_dels=None,
-                 right_align_ambig_ins=None,
-                 min_mutation_separation=None,
-                 min_qual_to_count=None,
-                 mutation_type_to_count=None,
-                 random_primer_len=None,
-                 amplicon=None,
-                 max_primer_offset=None,
-                 require_forward_primer_mapped=None,
-                 require_reverse_primer_mapped=None,
-                 trim_primers=None,
-                 render_mutations=None,
-                 render_must_span=None,
-                 max_pages=None,
-                 per_read_histograms=None,
-                 **kwargs):
+    def __init__(
+        self,
+        target_name=None,
+        target_length=None,
+        primer_pairs=None,
+        target=None,
+        num_samples=None,
+        output_variant_counts=None,
+        output_mutation_counts=None,
+        min_mapq=None,
+        maxins=None,
+        input_is_unpaired=None,
+        min_depth=None,
+        max_bg=None,
+        norm=None,
+        separate_ambig_counts=None,
+        right_align_ambig_dels=None,
+        right_align_ambig_ins=None,
+        min_mutation_separation=None,
+        min_qual_to_count=None,
+        mutation_type_to_count=None,
+        random_primer_len=None,
+        amplicon=None,
+        max_primer_offset=None,
+        require_forward_primer_mapped=None,
+        require_reverse_primer_mapped=None,
+        trim_primers=None,
+        render_mutations=None,
+        render_must_span=None,
+        max_pages=None,
+        per_read_histograms=None,
+        **kwargs
+    ):
         require_explicit_kwargs(locals())
         assert isinstance(num_samples, int)
         super().__init__(**kwargs)
@@ -1726,63 +1787,69 @@ class PostAlignment(Component):
         for i in range(num_samples):
             sample = samples[i]
 
-            parser = MutationParser(name="MutationParser_" + sample,
-                                    min_mapq=min_mapq,
-                                    maxins=maxins,
-                                    input_is_unpaired=input_is_unpaired,
-                                    right_align_ambig_dels=right_align_ambig_dels,
-                                    right_align_ambig_ins=right_align_ambig_ins,
-                                    min_mutation_separation=min_mutation_separation,
-                                    min_qual=min_qual_to_count,
-                                    random_primer_len=random_primer_len,
-                                    mutation_type=mutation_type_to_count,
-                                    variant_mode=output_variant_counts,
-                                    amplicon=amplicon,
-                                    max_primer_offset=max_primer_offset,
-                                    require_forward_primer_mapped=require_forward_primer_mapped,
-                                    require_reverse_primer_mapped=require_reverse_primer_mapped,
-                                    trim_primers=trim_primers,
-                                    assoc_sample=sample,
-                                    debug_out=debug_out)
+            parser = MutationParser(
+                name="MutationParser_" + sample,
+                min_mapq=min_mapq,
+                maxins=maxins,
+                input_is_unpaired=input_is_unpaired,
+                right_align_ambig_dels=right_align_ambig_dels,
+                right_align_ambig_ins=right_align_ambig_ins,
+                min_mutation_separation=min_mutation_separation,
+                min_qual=min_qual_to_count,
+                random_primer_len=random_primer_len,
+                mutation_type=mutation_type_to_count,
+                variant_mode=output_variant_counts,
+                amplicon=amplicon,
+                max_primer_offset=max_primer_offset,
+                require_forward_primer_mapped=require_forward_primer_mapped,
+                require_reverse_primer_mapped=require_reverse_primer_mapped,
+                trim_primers=trim_primers,
+                assoc_sample=sample,
+                debug_out=debug_out,
+            )
 
             self.add(parser)
 
             if debug_out:
-                comp_name = "MutationRenderer_{}_{}".format(
-                    sample,
-                    self.assoc_rna)
-                renderer = MutationRenderer(name=comp_name,
-                                            assoc_rna=self.assoc_rna,
-                                            assoc_sample=sample,
-                                            maxins=maxins,
-                                            amplicon=amplicon,
-                                            max_pages=max_pages,
-                                            span=render_must_span)
+                comp_name = "MutationRenderer_{}_{}".format(sample, self.assoc_rna)
+                renderer = MutationRenderer(
+                    name=comp_name,
+                    assoc_rna=self.assoc_rna,
+                    assoc_sample=sample,
+                    maxins=maxins,
+                    amplicon=amplicon,
+                    max_pages=max_pages,
+                    span=render_must_span,
+                )
                 connect(parser.debug_out, renderer.input)
                 self.add(renderer)
 
-            counter = MutationCounter(name="MutationCounter_" + sample,
-                                      target_length=target_length,
-                                      primer_pairs=primer_pairs,
-                                      variant_out=output_variant_counts,
-                                      mutations_out=output_mutation_counts,
-                                      assoc_sample=sample,
-                                      per_read_histograms=per_read_histograms,
-                                      separate_ambig_counts=separate_ambig_counts)
+            counter = MutationCounter(
+                name="MutationCounter_" + sample,
+                target_length=target_length,
+                primer_pairs=primer_pairs,
+                variant_out=output_variant_counts,
+                mutations_out=output_mutation_counts,
+                assoc_sample=sample,
+                per_read_histograms=per_read_histograms,
+                separate_ambig_counts=separate_ambig_counts,
+            )
 
             connect_nodes(parser.parsed_mutations, counter.mut)
             self.add(counter)
 
             counts.append(counter.mutations)
 
-        profilehandler = ProfileHandler(target=target,
-                                        target_name=target_name,
-                                        mindepth=min_depth,
-                                        maxbg=max_bg,
-                                        random_primer_len=random_primer_len,
-                                        counts=counts,
-                                        norm=norm,
-                                        amplicon=amplicon)
+        profilehandler = ProfileHandler(
+            target=target,
+            target_name=target_name,
+            mindepth=min_depth,
+            maxbg=max_bg,
+            random_primer_len=random_primer_len,
+            counts=counts,
+            norm=norm,
+            amplicon=amplicon,
+        )
         self.add(profilehandler)
 
         # set assoc_rna property for all children
@@ -1793,37 +1860,39 @@ class PostAlignment(Component):
 
 
 class CorrectSequence(Component):
-    def __init__(self,
-                 target=None,
-                 target_names=None,
-                 target_lengths=None,
-                 U=None,
-                 R1=None,
-                 R2=None,
-                 preserve_order=None,
-                 total_target_length=None,
-                 disable_soft_clipping=None,
-                 min_mapq=None,
-                 min_qual_to_trim=None,
-                 window_to_trim=None,
-                 min_length_to_trim=None,
-                 min_qual_to_count=None,
-                 min_seq_depth=None,
-                 min_freq=None,
-                 random_primer_len=None,
-                 star_aligner=None,
-                 genomeSAindexNbase=None,
-                 star_shared_index=None,
-                 nproc=None,
-                 maxins=None,
-                 max_search_depth=None,
-                 max_reseed=None,
-                 amplicon=None,
-                 max_primer_offset=None,
-                 require_forward_primer_mapped=None,
-                 require_reverse_primer_mapped=None,
-                 trim_primers=None,
-                 **kwargs):
+    def __init__(
+        self,
+        target=None,
+        target_names=None,
+        target_lengths=None,
+        U=None,
+        R1=None,
+        R2=None,
+        preserve_order=None,
+        total_target_length=None,
+        disable_soft_clipping=None,
+        min_mapq=None,
+        min_qual_to_trim=None,
+        window_to_trim=None,
+        min_length_to_trim=None,
+        min_qual_to_count=None,
+        min_seq_depth=None,
+        min_freq=None,
+        random_primer_len=None,
+        star_aligner=None,
+        genomeSAindexNbase=None,
+        star_shared_index=None,
+        nproc=None,
+        maxins=None,
+        max_search_depth=None,
+        max_reseed=None,
+        amplicon=None,
+        max_primer_offset=None,
+        require_forward_primer_mapped=None,
+        require_reverse_primer_mapped=None,
+        trim_primers=None,
+        **kwargs
+    ):
         locs = locals()
         for x in ["U", "R1", "R2"]:
             locs.pop(x)
@@ -1831,103 +1900,110 @@ class CorrectSequence(Component):
         require_explicit_kwargs(locs)
         super().__init__(**kwargs)
 
-        prep = AlignPrep(target=target,
-                         num_targets=len(target_names),
-                         total_target_length=total_target_length,
-                         star_aligner=star_aligner,
-                         genomeSAindexNbase=genomeSAindexNbase,
-                         nproc=nproc)
+        prep = AlignPrep(
+            target=target,
+            num_targets=len(target_names),
+            total_target_length=total_target_length,
+            star_aligner=star_aligner,
+            genomeSAindexNbase=genomeSAindexNbase,
+            nproc=nproc,
+        )
 
-        sample = Sample(U=U,
-                        R1=R1, R2=R2,
-                        o1=True, o2=True,
-                        disable_soft_clipping=disable_soft_clipping,
-                        min_mapq=min_mapq,
-                        assoc_sample="sequence correction",
-                        preserve_order=preserve_order,
-                        star_aligner=star_aligner,
-                        star_shared_index=star_shared_index,
-                        nproc=nproc,
-                        maxins=maxins,
-                        max_search_depth=max_search_depth,
-                        max_reseed=max_reseed,
-                        min_qual_to_trim=min_qual_to_trim,
-                        window_to_trim=window_to_trim,
-                        min_length_to_trim=min_length_to_trim,
-                        )
-        self.add([prep,
-                  sample])
+        sample = Sample(
+            U=U,
+            R1=R1,
+            R2=R2,
+            o1=True,
+            o2=True,
+            disable_soft_clipping=disable_soft_clipping,
+            min_mapq=min_mapq,
+            assoc_sample="sequence correction",
+            preserve_order=preserve_order,
+            star_aligner=star_aligner,
+            star_shared_index=star_shared_index,
+            nproc=nproc,
+            maxins=maxins,
+            max_search_depth=max_search_depth,
+            max_reseed=max_reseed,
+            min_qual_to_trim=min_qual_to_trim,
+            window_to_trim=window_to_trim,
+            min_length_to_trim=min_length_to_trim,
+        )
+        self.add([prep, sample])
         connect(prep.index, sample.index)
-        self.add(prep.target) # simplify access to main sequence input node
+        self.add(prep.target)  # simplify access to main sequence input node
 
         # split aligned output by mapped RNA (if needed)
-        if len(target_names)>1:
+        if len(target_names) > 1:
             splitter = SplitByTarget(target_names=target_names)
             connect(sample.aligned, splitter.input)
             self.add(splitter)
             corrected_nodes = []
             for i in range(len(target_names)):
-                mapped_node = splitter["rna_{}".format(i+1)]
-                parser = MutationParser(name="MutationParser_{}".format(i+1),
-                                        assoc_rna=target_names[i],
-                                        min_mapq=min_mapq,
-                                        min_qual=min_qual_to_count,
-                                        random_primer_len=random_primer_len,
-                                        maxins=maxins,
-                                        amplicon=amplicon,
-                                        max_primer_offset=max_primer_offset,
-                                        require_forward_primer_mapped=require_forward_primer_mapped,
-                                        require_reverse_primer_mapped=require_reverse_primer_mapped,
-                                        trim_primers=trim_primers,
-                                        )
+                mapped_node = splitter["rna_{}".format(i + 1)]
+                parser = MutationParser(
+                    name="MutationParser_{}".format(i + 1),
+                    assoc_rna=target_names[i],
+                    min_mapq=min_mapq,
+                    min_qual=min_qual_to_count,
+                    random_primer_len=random_primer_len,
+                    maxins=maxins,
+                    amplicon=amplicon,
+                    max_primer_offset=max_primer_offset,
+                    require_forward_primer_mapped=require_forward_primer_mapped,
+                    require_reverse_primer_mapped=require_reverse_primer_mapped,
+                    trim_primers=trim_primers,
+                )
 
-                counter = MutationCounter(name="MutationCounter_{}".format(i+1),
-                                          assoc_rna=target_names[i],
-                                          target_length=target_lengths[i],
-                                          variant_out=True,
-                                          mutations_out=False,
-                                          )
-                connect(splitter["rna_{}".format(i+1)], parser.input)
+                counter = MutationCounter(
+                    name="MutationCounter_{}".format(i + 1),
+                    assoc_rna=target_names[i],
+                    target_length=target_lengths[i],
+                    variant_out=True,
+                    mutations_out=False,
+                )
+                connect(splitter["rna_{}".format(i + 1)], parser.input)
                 connect(parser, counter)
-                self.add([parser,
-                          counter])
+                self.add([parser, counter])
 
-                sequencefixer = SequenceCorrector(name="SequenceCorrector_{}".format(i+1),
-                                                  assoc_rna=target_names[i],
-                                                  mindepth=min_seq_depth,
-                                                  minfreq=min_freq,
-                                                  target_name=target_names[i])  # FIXME: keep param names consistent across codebase
+                sequencefixer = SequenceCorrector(
+                    name="SequenceCorrector_{}".format(i + 1),
+                    assoc_rna=target_names[i],
+                    mindepth=min_seq_depth,
+                    minfreq=min_freq,
+                    target_name=target_names[i],
+                )  # FIXME: keep param names consistent across codebase
                 self.add(sequencefixer)
                 connect(prep.target.input_node, sequencefixer.target)
                 connect(counter.variants, sequencefixer.variants)
                 corrected_nodes.append(sequencefixer.corrected)
             # combine all corrected fasta sequences into a single file
-            appender = Appender(inputs=corrected_nodes,
-                                add_extra_newline=True)
+            appender = Appender(inputs=corrected_nodes, add_extra_newline=True)
             self.add(appender)
             self.add(appender.appended, alias="corrected")
 
         else:
-            parser = MutationParser(min_mapq=min_mapq,
-                                    min_qual=min_qual_to_count,
-                                    random_primer_len=random_primer_len,
-                                    maxins=maxins,
-                                    amplicon=amplicon,
-                                    max_primer_offset=max_primer_offset,
-                                    require_forward_primer_mapped=require_forward_primer_mapped,
-                                    require_reverse_primer_mapped=require_reverse_primer_mapped,
-                                    trim_primers=trim_primers,
-                                    )
-            counter = MutationCounter(variant_out=True,
-                                      mutations_out=False,
-                                      target_length=target_lengths[0])
+            parser = MutationParser(
+                min_mapq=min_mapq,
+                min_qual=min_qual_to_count,
+                random_primer_len=random_primer_len,
+                maxins=maxins,
+                amplicon=amplicon,
+                max_primer_offset=max_primer_offset,
+                require_forward_primer_mapped=require_forward_primer_mapped,
+                require_reverse_primer_mapped=require_reverse_primer_mapped,
+                trim_primers=trim_primers,
+            )
+            counter = MutationCounter(
+                variant_out=True, mutations_out=False, target_length=target_lengths[0]
+            )
             connect(sample.aligned, parser.input)
             connect(parser, counter)
-            self.add([parser,
-                      counter])
+            self.add([parser, counter])
 
-            sequencefixer = SequenceCorrector(mindepth=min_seq_depth,
-                                              minfreq=min_freq)  # FIXME: keep param names consistent across codebase
+            sequencefixer = SequenceCorrector(
+                mindepth=min_seq_depth, minfreq=min_freq
+            )  # FIXME: keep param names consistent across codebase
             self.add(sequencefixer)
             connect(prep.target.input_node, sequencefixer.target)
             connect(counter.variants, sequencefixer.variants)
@@ -1940,12 +2016,9 @@ class CorrectSequence(Component):
 
 
 class Mangler(Component):
-    def __init__(self,
-                 **kwargs):
-        gv_props = {"color": "red",
-                    "penwidth": "8"}
-        super().__init__(gv_props=gv_props,
-                         **kwargs)
+    def __init__(self, **kwargs):
+        gv_props = {"color": "red", "penwidth": "8"}
+        super().__init__(gv_props=gv_props, **kwargs)
         self.add(InputNode())
         self.add(OutputNode(extension="passthrough"))
 
@@ -1955,12 +2028,7 @@ class Mangler(Component):
             mangler = "mangle_binary.py"
         else:
             mangler = "mangle_text_fixed.py"
-        cmd = [pyexe,
-               os.path.join(bin_dir, mangler),
-               '<',
-               '{input}',
-               '>',
-               '{output}']
+        cmd = [pyexe, os.path.join(bin_dir, mangler), "<", "{input}", ">", "{output}"]
         return cmd
 
 
@@ -1968,23 +2036,22 @@ class PsToPdf(Component):
     """
     Convert a PostScript file to PDF.
     """
-    def __init__(self,
-                 maxins=200,
-                 **kwargs):
+
+    def __init__(self, maxins=200, **kwargs):
         super().__init__(**kwargs)
-        self.maxins=maxins
+        self.maxins = maxins
         self.add(InputNode(name="ps"))
-        self.add(OutputNode(name="pdf",
-                            extension="pdf",
-                            parallel=False))
+        self.add(OutputNode(name="pdf", extension="pdf", parallel=False))
         self.add(StdoutNode())
         self.add(StderrNode())
 
     def cmd(self):
-        cmd = [os.path.join(bin_dir, "ps2pdf_rescaled.sh"),
-               str(self.maxins),
-               "{ps}",
-               "{pdf}"]
+        cmd = [
+            os.path.join(bin_dir, "ps2pdf_rescaled.sh"),
+            str(self.maxins),
+            "{ps}",
+            "{pdf}",
+        ]
         return cmd
 
 
@@ -1993,60 +2060,51 @@ class MutationRendererPs(Component):
     For debugging, make a postscript file with parsed and processed
     reads and mutations
     """
-    def __init__(self,
-                 maxins=200,
-                 amplicon=False,
-                 max_pages=100,
-                 span=None,
-                 **kwargs):
+
+    def __init__(self, maxins=200, amplicon=False, max_pages=100, span=None, **kwargs):
         super().__init__(**kwargs)
         self.maxins = maxins
         self.amplicon = amplicon
         self.max_pages = max_pages
         self.span = span
-        self.add(InputNode(name="input",
-                           parallel=True))
+        self.add(InputNode(name="input", parallel=True))
         if self.amplicon:
             self.add(InputNode(name="primers"))
-        self.add(OutputNode(name="ps",
-                            extension="ps",
-                            parallel=True))
+        self.add(OutputNode(name="ps", extension="ps", parallel=True))
         self.add(StdoutNode())
         self.add(StderrNode())
 
     def cmd(self):
-        cmd = [pyexe,
-               os.path.join(bin_dir, "render_mutations_ps.py"),
-               "--max-length", str(self.maxins),
-               "--max-pages", str(self.max_pages),
-               "--input", "{input}",
-               "--output", "{ps}"]
+        cmd = [
+            pyexe,
+            os.path.join(bin_dir, "render_mutations_ps.py"),
+            "--max-length",
+            str(self.maxins),
+            "--max-pages",
+            str(self.max_pages),
+            "--input",
+            "{input}",
+            "--output",
+            "{ps}",
+        ]
         if self.amplicon:
             cmd += ["--primers", "{primers}"]
-        if self.span is not None and self.span != '':
+        if self.span is not None and self.span != "":
             cmd += ["--must-span", self.span]
         return cmd
 
 
 class MutationRenderer(Component):
-    def __init__(self,
-                 maxins=200,
-                 amplicon=False,
-                 max_pages=100,
-                 span=None,
-                 **kwargs):
+    def __init__(self, maxins=200, amplicon=False, max_pages=100, span=None, **kwargs):
         super().__init__(**kwargs)
-        renderer = MutationRendererPs(maxins=maxins, amplicon=amplicon, max_pages=max_pages, span=span)
+        renderer = MutationRendererPs(
+            maxins=maxins, amplicon=amplicon, max_pages=max_pages, span=span
+        )
         converter = PsToPdf(maxins=maxins)
         connect(renderer.ps, converter.ps)
 
-        self.add([renderer,
-                  converter])
+        self.add([renderer, converter])
 
         # allow access to some nodes from this object scope
         self.add(renderer.input, alias="input")
         self.add(converter.pdf, alias="pdf")
-
-
-
-

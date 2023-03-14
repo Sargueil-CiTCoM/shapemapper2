@@ -28,7 +28,7 @@ requirements:
     - cython
     - scipy=1.9.*
     - numpy=1.23.*
-    - scikit-learn=1.5.*
+    - scikit-learn=1.*
     - bbmap=37.*
     - java-jdk=8.*
     - bowtie2
