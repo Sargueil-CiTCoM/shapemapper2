@@ -439,7 +439,7 @@ if __name__ == "__main__":
         if effective_depths[k] is not None:
             lengths.append(effective_depths[k].shape[0])
     if len(set(lengths)) > 1:
-        s = "Error: input data lengths do not all match."
+        s = "Error: input data lengths do not all match. " + str(lengths) 
         raise RuntimeError(s)
 
     profile, stderrs, rates = calc_profile(counts, effective_depths)

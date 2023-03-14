@@ -1237,7 +1237,11 @@ if __name__=="__main__":
                 d["Modified_effective_depth"], d["Untreated_effective_depth"], d["Denatured_effective_depth"],
                 d["Modified_read_depth"], d["Untreated_read_depth"], d["Denatured_read_depth"],
                 p.plot, title, qc_pass)
-
+    except Exception as e:
+        print("Fail while rendering plot")
+        print(e)
+        exit(1)
+    try:
         if p.hist is not None:
             write_histograms(
                 profile, stderr,
@@ -1246,5 +1250,7 @@ if __name__=="__main__":
                 d["Modified_rate"], d["Untreated_rate"], d["Denatured_rate"],
                 d["Modified_effective_depth"], d["Untreated_effective_depth"], d["Denatured_effective_depth"],
                 p.hist, title, qc_pass)
-    except:
-        pass
+    except Exception as e:
+        print("Fail while rendering histogram")
+        print(e)
+        exit(1)
