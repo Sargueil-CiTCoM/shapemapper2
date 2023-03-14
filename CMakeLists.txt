@@ -1,1 +1,1 @@
-add_subdirectory(shapemap2/cpp-src)
+add_subdirectory(internals/cpp-src)
